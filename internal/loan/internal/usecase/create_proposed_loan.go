@@ -1,0 +1,18 @@
+package usecase
+
+import (
+	"context"
+
+	"github.com/shopspring/decimal"
+)
+
+type (
+	CreateProposedLoan interface {
+		Execute(ctx context.Context, in CreateProposedLoanInput) error
+	}
+
+	CreateProposedLoanInput struct {
+		UserID uint64          `json:"user_id"`
+		Amount decimal.Decimal `json:"amount"`
+	}
+)

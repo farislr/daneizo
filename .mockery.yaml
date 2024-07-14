@@ -1,0 +1,18 @@
+with-expecter: true
+disable-version-string: True
+packages:
+  github.com/farislr/daneizo/internal/loan:
+    config:
+      all: True
+      recursive: True
+      outpkg: "loanmocks"
+      filename: "mock_{{ .InterfaceName | snakecase }}.go"
+      dir: internal/loan/internal/mocks
+
+  github.com/farislr/daneizo/internal/pkg:
+    config:
+      all: True
+      recursive: True
+      outpkg: "pkgmocks"
+      filename: "mock_{{ .InterfaceName | snakecase }}.go"
+      dir: internal/pkg/pkgmocks
