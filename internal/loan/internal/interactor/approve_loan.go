@@ -19,6 +19,7 @@ type (
 			in sqlentity.UpdateEntity,
 			opts ...gateway.UpdateLoanOption,
 		) error
+		GetLoan(ctx context.Context, opts ...gateway.GetLoanOption) (sqlentity.Loans, error)
 	}
 
 	ApproveLoan struct {
@@ -42,6 +43,26 @@ func (a *ApproveLoan) Execute(
 	ctx context.Context,
 	in usecase.ApprovedLoanInput,
 ) error {
+	loans, err := a.store.GetLoan(ctx, gateway.GetLoanWithLoanIDFilter(in.LoanID))
+	if err != nil {
+		a.logger.Errorw("failed to get loan", "error", err)
+
+		return pkgerror.ServerErrorFrom(err)
+	}
+
+	var loan sqlentity.Loan
+	if loan = loans.First(); loans.IsEmpty() {
+		a.logger.Errorw("loan not found")
+
+		return pkgerror.NewBusinessError("loan not found")
+	}
+
+	if loan.Status != sqlentity.Proposed {
+		a.logger.Errorw("loan already approved")
+
+		return pkgerror.NewBusinessError("loan already approved")
+	}
+
 	if err := a.store.UpdateLoan(ctx, sqlentity.UpdateApproveLoan{
 		ApprovalDate: sql.NullTime{
 			Valid: true,

@@ -125,7 +125,7 @@ func (l *LoanHTTPEndpoint) ApproveLoan(
 	if err := l.approveLoanUsecase.Execute(ctx, input); err != nil {
 		l.logger.Errorw("failed to approve loan", "error", err)
 
-		return nil, pkgerror.ServerErrorFrom(err)
+		return nil, err
 	}
 
 	return nil, nil
