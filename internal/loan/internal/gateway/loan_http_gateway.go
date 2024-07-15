@@ -32,11 +32,18 @@ func NewLoanHTTPGateway(
 
 	httpRouter.Handler(http.MethodPost, "/loan", server.Serve(loanHTTPEndpoint.CreateNewLoan))
 
+	httpRouter.Handler(
+		http.MethodPost,
+		"/loan/:loan_id/invest",
+		server.Serve(loanHTTPEndpoint.InvestLoan),
+	)
+
 }
 
 type LoanHTTPEndpoint struct {
 	createProposedLoanUsecase usecase.CreateProposedLoan
 	approveLoanUsecase        usecase.ApprovedLoan
+	investLoanUsecase         usecase.InvestLoan
 
 	validator *validator.Validate
 	logger    *zap.SugaredLogger
@@ -45,6 +52,7 @@ type LoanHTTPEndpoint struct {
 func NewLoanHTTPEndpoint(
 	createNewLoanUsecase usecase.CreateProposedLoan,
 	approveLoanUsecase usecase.ApprovedLoan,
+	investLoanUsecase usecase.InvestLoan,
 
 	logger *zap.SugaredLogger,
 	validator *validator.Validate,
@@ -53,6 +61,7 @@ func NewLoanHTTPEndpoint(
 	return &LoanHTTPEndpoint{
 		createProposedLoanUsecase: createNewLoanUsecase,
 		approveLoanUsecase:        approveLoanUsecase,
+		investLoanUsecase:         investLoanUsecase,
 
 		logger:    logger,
 		validator: validator,
@@ -117,6 +126,43 @@ func (l *LoanHTTPEndpoint) ApproveLoan(
 		l.logger.Errorw("failed to approve loan", "error", err)
 
 		return nil, pkgerror.ServerErrorFrom(err)
+	}
+
+	return nil, nil
+}
+
+func (l *LoanHTTPEndpoint) InvestLoan(
+	ctx context.Context,
+	request pkghttp.Request,
+) (resp any, err error) {
+	var input usecase.InvestLoanInput
+	if err := request.Decode(&input); err != nil {
+		l.logger.Errorw("failed to decode request", "error", err)
+
+		return nil, pkgerror.ServerErrorFrom(err)
+	}
+
+	if err := l.validator.Struct(input); err != nil {
+		l.logger.Errorw("failed to validate request", "error", err)
+
+		return nil, pkgerror.ValidationErrorFrom(err)
+	}
+
+	params := httprouter.ParamsFromContext(ctx)
+
+	loanID := params.ByName("loan_id")
+
+	input.LoanID, err = strconv.ParseUint(loanID, 10, 64)
+	if err != nil {
+		l.logger.Errorw("failed to parse loan id", "error", err)
+
+		return nil, pkgerror.ValidationErrorFrom(err)
+	}
+
+	if err := l.investLoanUsecase.Execute(ctx, input); err != nil {
+		l.logger.Errorw("failed to invest loan", "error", err)
+
+		return nil, err
 	}
 
 	return nil, nil

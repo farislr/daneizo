@@ -25,7 +25,6 @@ type Dependencies struct {
 }
 
 func New(deps Dependencies) *Exposed {
-
 	loanSQLstore := gateway.NewLoanSQLGateway(deps.DB, deps.Logger, deps.QueryBuilder)
 
 	createProposedLoanUsecase := interactor.NewCreateProposedLoan(
@@ -39,9 +38,16 @@ func New(deps Dependencies) *Exposed {
 		deps.Logger,
 	)
 
+	investLoanUsecase := interactor.NewInvestLoan(
+		loanSQLstore,
+		deps.Logger,
+		deps.SnowflakeGen,
+	)
+
 	loanHTTPEndpoint := gateway.NewLoanHTTPEndpoint(
 		createProposedLoanUsecase,
 		approveLoanUsecase,
+		investLoanUsecase,
 
 		deps.Logger,
 		deps.Validator,

@@ -184,7 +184,7 @@ func (ls *loanSQLGatewaySuite) TestLoanSQLGateway_UpdateLoan() {
 			name: "error RowsAffected",
 			args: args{
 				ctx: context.Background(),
-				in: &sqlentity.ApproveLoan{
+				in: &sqlentity.UpdateApproveLoan{
 					ApprovalDate: sql.NullTime{
 						Valid: true,
 						Time:  time.Now(),
@@ -195,7 +195,7 @@ func (ls *loanSQLGatewaySuite) TestLoanSQLGateway_UpdateLoan() {
 					},
 				},
 				opts: []UpdateLoanOption{
-					WithLoanIDFilter(1),
+					UpdateLoanWithLoanIDFilter(1),
 				},
 			},
 			mockFn: func(a args) {
@@ -214,7 +214,7 @@ func (ls *loanSQLGatewaySuite) TestLoanSQLGateway_UpdateLoan() {
 			name: "success",
 			args: args{
 				ctx: context.Background(),
-				in: &sqlentity.ApproveLoan{
+				in: &sqlentity.UpdateApproveLoan{
 					ApprovalDate: sql.NullTime{
 						Valid: true,
 						Time:  time.Now(),
@@ -225,7 +225,7 @@ func (ls *loanSQLGatewaySuite) TestLoanSQLGateway_UpdateLoan() {
 					},
 				},
 				opts: []UpdateLoanOption{
-					WithLoanIDFilter(1),
+					UpdateLoanWithLoanIDFilter(1),
 				},
 			},
 			mockFn: func(a args) {

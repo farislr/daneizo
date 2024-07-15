@@ -2,7 +2,6 @@ package sqlentity
 
 import (
 	"database/sql/driver"
-	"time"
 
 	"github.com/shopspring/decimal"
 )
@@ -12,8 +11,6 @@ type LoanInvestment struct {
 	LoanID     uint64
 	InvestorID uint64
 	Amount     decimal.Decimal
-	CreatedAt  time.Time
-	UpdatedAt  time.Time
 }
 
 func (l LoanInvestment) Columns() []any {
@@ -22,8 +19,6 @@ func (l LoanInvestment) Columns() []any {
 		"loan_id",
 		"investor_id",
 		"amount",
-		"created_at",
-		"updated_at",
 	}
 }
 
@@ -45,8 +40,6 @@ func (l *LoanInvestment) Values() []any {
 		l.LoanID,
 		l.InvestorID,
 		l.Amount,
-		l.CreatedAt,
-		l.UpdatedAt,
 	}
 }
 

@@ -42,7 +42,7 @@ func (a *ApproveLoan) Execute(
 	ctx context.Context,
 	in usecase.ApprovedLoanInput,
 ) error {
-	if err := a.store.UpdateLoan(ctx, sqlentity.ApproveLoan{
+	if err := a.store.UpdateLoan(ctx, sqlentity.UpdateApproveLoan{
 		ApprovalDate: sql.NullTime{
 			Valid: true,
 			Time:  time.Now(),
@@ -51,7 +51,7 @@ func (a *ApproveLoan) Execute(
 			Valid: true,
 			Int64: int64(in.EmployeeID),
 		},
-	}, gateway.WithLoanIDFilter(in.LoanID)); err != nil {
+	}, gateway.UpdateLoanWithLoanIDFilter(in.LoanID)); err != nil {
 		a.logger.Errorw("failed to update loan", "error", err)
 
 		return pkgerror.ServerErrorFrom(err)
