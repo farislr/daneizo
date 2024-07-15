@@ -5,8 +5,10 @@ import (
 	"database/sql"
 
 	"github.com/doug-martin/goqu/v9"
+	_ "github.com/doug-martin/goqu/v9/dialect/mysql"
 	"github.com/farislr/daneizo/internal/loan/internal/entity/sqlentity"
 	"github.com/farislr/daneizo/internal/pkg/pkgsql"
+
 	"go.uber.org/zap"
 )
 

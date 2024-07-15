@@ -33,8 +33,6 @@ func (l Loan) Columns() []any {
 		"approval_date",
 		"approval_employee_id",
 		"disbursement_date",
-		"created_at",
-		"updated_at",
 	}
 }
 
@@ -61,8 +59,6 @@ func (l *Loan) Values() []any {
 		l.ApprovalDate,
 		l.ApprovalEmployeeID,
 		l.DisbursementDate,
-		l.CreatedAt,
-		l.UpdatedAt,
 	}
 }
 
