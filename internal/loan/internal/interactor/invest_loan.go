@@ -63,6 +63,12 @@ func (i *InvestLoan) Execute(ctx context.Context, in usecase.InvestLoanInput) er
 		return pkgerror.NewBusinessError("loan already invested")
 	}
 
+	if loan.Status != sqlentity.Approved {
+		i.logger.Errorw("loan not approved")
+
+		return pkgerror.NewBusinessError("loan not approved")
+	}
+
 	loanInvestmentID := i.snowflakeGen.Generate()
 
 	if err := i.store.InsertLoanInvestment(
