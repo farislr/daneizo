@@ -7,5 +7,8 @@ func (app *App) setUpClosers() {
 		func(ctx context.Context) error {
 			return app.httpServer.Shutdown(ctx)
 		},
+		func(ctx context.Context) error {
+			return app.logger.Sync()
+		},
 	}...)
 }

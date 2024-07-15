@@ -6,7 +6,7 @@ import (
 )
 
 func (app *App) initLogger() {
-	logger, err := zap.NewDevelopment()
+	logger, err := zap.NewDevelopment(zap.AddStacktrace(zap.FatalLevel))
 	if err != nil {
 		app.err = multierror.Append(app.err, err)
 	}
