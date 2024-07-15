@@ -3,6 +3,7 @@ package gateway
 import (
 	"context"
 	"net/http"
+	"strconv"
 
 	"github.com/farislr/daneizo/internal/loan/internal/usecase"
 	"github.com/farislr/daneizo/internal/pkg/pkgerror"
@@ -23,26 +24,38 @@ func NewLoanHTTPGateway(
 		pkghttp.WithErrorResponseEncoder(pkghttp.CodeMessageErrorEncoder),
 	)
 
+	httpRouter.Handler(
+		http.MethodPost,
+		"/loan/:loan_id/approve",
+		server.Serve(loanHTTPEndpoint.ApproveLoan),
+	)
+
 	httpRouter.Handler(http.MethodPost, "/loan", server.Serve(loanHTTPEndpoint.CreateNewLoan))
+
 }
 
 type LoanHTTPEndpoint struct {
 	createProposedLoanUsecase usecase.CreateProposedLoan
+	approveLoanUsecase        usecase.ApprovedLoan
 
 	validator *validator.Validate
 	logger    *zap.SugaredLogger
 }
 
 func NewLoanHTTPEndpoint(
-	logger *zap.SugaredLogger,
 	createNewLoanUsecase usecase.CreateProposedLoan,
+	approveLoanUsecase usecase.ApprovedLoan,
+
+	logger *zap.SugaredLogger,
 	validator *validator.Validate,
 
 ) *LoanHTTPEndpoint {
 	return &LoanHTTPEndpoint{
 		createProposedLoanUsecase: createNewLoanUsecase,
-		logger:                    logger,
-		validator:                 validator,
+		approveLoanUsecase:        approveLoanUsecase,
+
+		logger:    logger,
+		validator: validator,
 	}
 }
 
@@ -67,6 +80,43 @@ func (l *LoanHTTPEndpoint) CreateNewLoan(
 		l.logger.Errorw("failed to create new loan", "error", err)
 
 		return nil, err
+	}
+
+	return nil, nil
+}
+
+func (l *LoanHTTPEndpoint) ApproveLoan(
+	ctx context.Context,
+	request pkghttp.Request,
+) (resp any, err error) {
+	var input usecase.ApprovedLoanInput
+	if err := request.Decode(&input); err != nil {
+		l.logger.Errorw("failed to decode request", "error", err)
+
+		return nil, pkgerror.ServerErrorFrom(err)
+	}
+
+	params := httprouter.ParamsFromContext(ctx)
+
+	loanID := params.ByName("loan_id")
+
+	input.LoanID, err = strconv.ParseUint(loanID, 10, 64)
+	if err != nil {
+		l.logger.Errorw("failed to parse loan id", "error", err)
+
+		return nil, pkgerror.ValidationErrorFrom(err)
+	}
+
+	if err := l.validator.Struct(input); err != nil {
+		l.logger.Errorw("failed to validate request", "error", err)
+
+		return nil, pkgerror.ValidationErrorFrom(err)
+	}
+
+	if err := l.approveLoanUsecase.Execute(ctx, input); err != nil {
+		l.logger.Errorw("failed to approve loan", "error", err)
+
+		return nil, pkgerror.ServerErrorFrom(err)
 	}
 
 	return nil, nil
