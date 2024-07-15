@@ -8,6 +8,6 @@ type (
 	}
 
 	DisburseLoanInput struct {
-		LoanID uint64 `json:"loan_id" validate:"required"`
+		LoanID uint64 `json:"loan_id"`
 	}
 )

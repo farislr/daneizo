@@ -2,7 +2,10 @@ package gateway
 
 import (
 	"context"
+	"fmt"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strconv"
 
 	"github.com/farislr/daneizo/internal/loan/internal/usecase"
@@ -42,6 +45,12 @@ func NewLoanHTTPGateway(
 		http.MethodPost,
 		"/loan/:loan_id/disburse",
 		server.Serve(loanHTTPEndpoint.DisburseLoan),
+	)
+
+	httpRouter.Handler(
+		http.MethodPost,
+		"/loan/:loan_id/upload-agreement-letter",
+		server.Serve(loanHTTPEndpoint.UploadAgreementLetter),
 	)
 }
 
@@ -204,5 +213,78 @@ func (l *LoanHTTPEndpoint) DisburseLoan(
 		return nil, pkgerror.ValidationErrorFrom(err)
 	}
 
+	if err := l.disburseLoanUsecase.Execute(ctx, input); err != nil {
+		l.logger.Errorw("failed to disburse loan", "error", err)
+
+		return nil, err
+	}
+
 	return nil, nil
+}
+
+func (l *LoanHTTPEndpoint) UploadAgreementLetter(
+	ctx context.Context,
+	request pkghttp.Request,
+) (resp any, err error) {
+	rawRequest := request.Raw()
+	params := httprouter.ParamsFromContext(ctx)
+
+	// 5MB max file size
+	if err := rawRequest.ParseMultipartForm(5 << 20); err != nil {
+		l.logger.Errorw("failed to parse multipart form", "error", err)
+
+		return nil, pkgerror.ServerErrorFrom(err)
+	}
+
+	multipartFile, multipartHeader, err := rawRequest.FormFile("agreement_letter")
+	if err != nil {
+		l.logger.Errorw("failed to get multipart file", "error", err)
+
+		return nil, pkgerror.ServerErrorFrom(err)
+	}
+	defer multipartFile.Close()
+
+	workDir, err := os.Getwd()
+	if err != nil {
+		l.logger.Errorw("failed to get current working directory", "error", err)
+
+		return nil, pkgerror.ServerErrorFrom(err)
+	}
+
+	loanID := params.ByName("loan_id")
+	uploadPath := fmt.Sprintf("%s/%s/%s", workDir, "files/agreement-letter/", loanID)
+
+	if err := os.MkdirAll(uploadPath, os.ModePerm); err != nil {
+		l.logger.Errorw("failed to create upload directory", "error", err)
+
+		return nil, pkgerror.ServerErrorFrom(err)
+
+	}
+
+	file, err := os.Create(
+		fmt.Sprintf(
+			"%s/%s%s",
+			uploadPath,
+			l.fileNameWithoutExtension(multipartHeader.Filename),
+			filepath.Ext(multipartHeader.Filename),
+		),
+	)
+	if err != nil {
+		l.logger.Errorw("failed to create temp file", "error", err)
+
+		return nil, pkgerror.ServerErrorFrom(err)
+	}
+	defer file.Close()
+
+	if _, err := file.ReadFrom(multipartFile); err != nil {
+		l.logger.Errorw("failed to read file", "error", err)
+
+		return nil, pkgerror.ServerErrorFrom(err)
+	}
+
+	return nil, nil
+}
+
+func (l *LoanHTTPEndpoint) fileNameWithoutExtension(filename string) string {
+	return filename[:len(filename)-len(filepath.Ext(filename))]
 }

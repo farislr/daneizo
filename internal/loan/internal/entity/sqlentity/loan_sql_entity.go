@@ -10,17 +10,18 @@ import (
 )
 
 type Loan struct {
-	ID                 uint64
-	BorrowerID         uint64
-	PrincipalAmount    decimal.Decimal
-	InvestedAmount     decimal.Decimal
-	InterestRate       decimal.Decimal
-	Status             LoanStatus
-	ApprovalDate       sql.NullTime
-	ApprovalEmployeeID sql.NullInt64
-	DisbursementDate   sql.NullTime
-	CreatedAt          time.Time
-	UpdatedAt          time.Time
+	ID                         uint64
+	BorrowerID                 uint64
+	PrincipalAmount            decimal.Decimal
+	InvestedAmount             decimal.Decimal
+	InterestRate               decimal.Decimal
+	Status                     LoanStatus
+	ApprovalDate               sql.NullTime
+	ApprovalEmployeeID         sql.NullInt64
+	DisbursementDate           sql.NullTime
+	AgreementLetterDocumentURL sql.NullString
+	CreatedAt                  time.Time
+	UpdatedAt                  time.Time
 }
 
 func (l Loan) Columns() []any {
@@ -34,6 +35,7 @@ func (l Loan) Columns() []any {
 		"approval_date",
 		"approval_employee_id",
 		"disbursement_date",
+		"agreement_letter_document_url",
 	}
 }
 
@@ -60,6 +62,7 @@ func (l *Loan) Values() []any {
 		&l.ApprovalDate,
 		&l.ApprovalEmployeeID,
 		&l.DisbursementDate,
+		&l.AgreementLetterDocumentURL,
 	}
 }
 
@@ -278,13 +281,15 @@ func (a UpdateLoanStatus) MappedValues() map[string]driver.Value {
 }
 
 type DisburseLoan struct {
-	DisburesmentDate sql.NullTime
+	DisburesmentDate           sql.NullTime
+	AgreementLetterDocumentURL sql.NullString
 }
 
 func (a DisburseLoan) Columns() []any {
 	return []any{
 		"status",
 		"disbursement_date",
+		"agreement_letter_document_url",
 	}
 }
 
@@ -304,6 +309,7 @@ func (a *DisburseLoan) Values() []any {
 	return []any{
 		Disbursed,
 		a.DisburesmentDate,
+		a.AgreementLetterDocumentURL,
 	}
 }
 

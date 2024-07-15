@@ -3,6 +3,8 @@ package interactor
 import (
 	"context"
 	"database/sql"
+	"fmt"
+	"os"
 	"time"
 
 	"github.com/farislr/daneizo/internal/loan/internal/entity/sqlentity"
@@ -59,6 +61,13 @@ func (d *DisburseLoan) Execute(ctx context.Context, in usecase.DisburseLoanInput
 		return pkgerror.NewBusinessError("loan not invested")
 	}
 
+	basePath, err := os.Getwd()
+	if err != nil {
+		d.logger.Errorw("failed to get current working directory", "error", err)
+
+		return pkgerror.ServerErrorFrom(err)
+	}
+
 	if err := d.store.UpdateLoan(
 		ctx,
 		sqlentity.DisburseLoan{
@@ -66,12 +75,16 @@ func (d *DisburseLoan) Execute(ctx context.Context, in usecase.DisburseLoanInput
 				Time:  time.Now(),
 				Valid: true,
 			},
+			AgreementLetterDocumentURL: sql.NullString{
+				String: fmt.Sprintf("%s/files/agreement-letter/%d/letter-of-agreement-09.pdf", basePath, in.LoanID),
+				Valid:  true,
+			},
 		},
 		gateway.UpdateLoanWithLoanIDFilter(in.LoanID),
 	); err != nil {
 		d.logger.Errorw("failed to update loan", "error", err)
 
-		return err
+		return pkgerror.ServerErrorFrom(err)
 	}
 
 	return nil
