@@ -45,7 +45,7 @@ func (app *App) initDB() {
 	}
 
 	dsn := fmt.Sprintf(
-		"%s:%s@tcp(%s:%s)/%s",
+		"%s:%s@tcp(%s:%s)/%s?parseTime=true",
 		dbConfig.User,
 		dbConfig.Password,
 		dbConfig.Host,
