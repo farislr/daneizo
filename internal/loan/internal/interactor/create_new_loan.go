@@ -2,7 +2,6 @@ package interactor
 
 import (
 	"context"
-	"database/sql"
 
 	"github.com/farislr/daneizo/internal/loan/internal/entity/sqlentity"
 	"github.com/farislr/daneizo/internal/loan/internal/usecase"
@@ -39,15 +38,13 @@ func (c *CreateProposedLoan) Execute(
 	ctx context.Context,
 	in usecase.CreateProposedLoanInput,
 ) error {
+
 	if err := c.store.InsertLoan(ctx, sqlentity.Loan{
-		ID:                 c.snowflakeGen.Generate(),
-		BorrowerID:         in.UserID,
-		PrincipalAmount:    in.Amount,
-		InvestedAmount:     decimal.Zero,
-		Status:             sqlentity.Proposed,
-		ApprovalDate:       sql.NullTime{},
-		ApprovalEmployeeID: sql.NullInt64{},
-		DisbursementDate:   sql.NullTime{},
+		ID:              c.snowflakeGen.Generate(),
+		BorrowerID:      in.UserID,
+		PrincipalAmount: in.Amount,
+		InvestedAmount:  decimal.Zero,
+		Status:          sqlentity.Proposed,
 	}); err != nil {
 		c.logger.Errorw("failed to insert loan", "error", err)
 

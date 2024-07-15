@@ -12,7 +12,7 @@ type (
 	}
 
 	CreateProposedLoanInput struct {
-		UserID uint64          `json:"user_id"`
-		Amount decimal.Decimal `json:"amount"`
+		UserID uint64          `json:"user_id" validate:"required"` // UserID should get from authorization
+		Amount decimal.Decimal `json:"amount"  validate:"required"`
 	}
 )

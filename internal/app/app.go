@@ -9,6 +9,7 @@ import (
 	"github.com/farislr/daneizo/internal/loan"
 	"github.com/farislr/daneizo/internal/pkg/pkgsql"
 	"github.com/farislr/daneizo/internal/pkg/pkguid"
+	"github.com/go-playground/validator/v10"
 	"github.com/hashicorp/go-multierror"
 	"github.com/julienschmidt/httprouter"
 	"github.com/spf13/viper"
@@ -18,6 +19,7 @@ import (
 type App struct {
 	database     *sql.DB
 	queryBuilder pkgsql.GoquBuilder
+	validator    *validator.Validate
 	logger       *zap.Logger
 	router       *httprouter.Router
 	httpServer   *http.Server
@@ -63,6 +65,7 @@ func (app *App) spinUp() *App {
 	app.initRouter()
 	app.makeHTTPServer()
 	app.initSnowflakeGen()
+	app.initValidator()
 	app.setUpClosers()
 
 	// spin up module
@@ -78,5 +81,6 @@ func (app *App) spinUpLoan() {
 		QueryBuilder: app.queryBuilder,
 		SnowflakeGen: app.snowflakeGen,
 		HttpRouter:   app.router,
+		Validator:    app.validator,
 	})
 }
