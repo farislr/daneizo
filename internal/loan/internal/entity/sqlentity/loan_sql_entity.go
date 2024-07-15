@@ -131,12 +131,12 @@ func (ls *LoanStatus) Scan(value any) error {
 	return errors.New("failed to scan loan status")
 }
 
-type UpdateApproveLoan struct {
+type ApproveLoan struct {
 	ApprovalDate       sql.NullTime
 	ApprovalEmployeeID sql.NullInt64
 }
 
-func (a UpdateApproveLoan) Columns() []any {
+func (a ApproveLoan) Columns() []any {
 	return []any{
 		"status",
 		"approval_date",
@@ -144,7 +144,7 @@ func (a UpdateApproveLoan) Columns() []any {
 	}
 }
 
-func (a UpdateApproveLoan) StringColumns() []string {
+func (a ApproveLoan) StringColumns() []string {
 	vals := make([]string, len(a.Columns()))
 	for i, col := range a.Columns() {
 		c, ok := col.(string)
@@ -156,7 +156,7 @@ func (a UpdateApproveLoan) StringColumns() []string {
 	return vals
 }
 
-func (a *UpdateApproveLoan) Values() []any {
+func (a *ApproveLoan) Values() []any {
 	return []any{
 		Approved,
 		a.ApprovalDate,
@@ -164,7 +164,7 @@ func (a *UpdateApproveLoan) Values() []any {
 	}
 }
 
-func (a UpdateApproveLoan) DriverValues() []driver.Value {
+func (a ApproveLoan) DriverValues() []driver.Value {
 	vals := make([]driver.Value, len(a.Values()))
 	for i, v := range a.Values() {
 		vals[i] = v
@@ -173,7 +173,7 @@ func (a UpdateApproveLoan) DriverValues() []driver.Value {
 	return vals
 }
 
-func (a UpdateApproveLoan) MappedValues() map[string]driver.Value {
+func (a ApproveLoan) MappedValues() map[string]driver.Value {
 	vals := make(map[string]driver.Value)
 	cols := a.StringColumns()
 	for i, col := range cols {
@@ -268,6 +268,55 @@ func (a UpdateLoanStatus) DriverValues() []driver.Value {
 }
 
 func (a UpdateLoanStatus) MappedValues() map[string]driver.Value {
+	vals := make(map[string]driver.Value)
+	cols := a.StringColumns()
+	for i, col := range cols {
+		vals[col] = a.DriverValues()[i]
+	}
+
+	return vals
+}
+
+type DisburseLoan struct {
+	DisburesmentDate sql.NullTime
+}
+
+func (a DisburseLoan) Columns() []any {
+	return []any{
+		"status",
+		"disbursement_date",
+	}
+}
+
+func (a DisburseLoan) StringColumns() []string {
+	vals := make([]string, len(a.Columns()))
+	for i, col := range a.Columns() {
+		c, ok := col.(string)
+		if ok {
+			vals[i] = c
+		}
+	}
+
+	return vals
+}
+
+func (a *DisburseLoan) Values() []any {
+	return []any{
+		Disbursed,
+		a.DisburesmentDate,
+	}
+}
+
+func (a DisburseLoan) DriverValues() []driver.Value {
+	vals := make([]driver.Value, len(a.Values()))
+	for i, v := range a.Values() {
+		vals[i] = v
+	}
+
+	return vals
+}
+
+func (a DisburseLoan) MappedValues() map[string]driver.Value {
 	vals := make(map[string]driver.Value)
 	cols := a.StringColumns()
 	for i, col := range cols {

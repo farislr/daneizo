@@ -44,10 +44,16 @@ func New(deps Dependencies) *Exposed {
 		deps.SnowflakeGen,
 	)
 
+	disburseLoanUsecase := interactor.NewDisburseLoan(
+		loanSQLstore,
+		deps.Logger,
+	)
+
 	loanHTTPEndpoint := gateway.NewLoanHTTPEndpoint(
 		createProposedLoanUsecase,
 		approveLoanUsecase,
 		investLoanUsecase,
+		disburseLoanUsecase,
 
 		deps.Logger,
 		deps.Validator,

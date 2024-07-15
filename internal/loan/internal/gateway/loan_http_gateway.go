@@ -38,12 +38,18 @@ func NewLoanHTTPGateway(
 		server.Serve(loanHTTPEndpoint.InvestLoan),
 	)
 
+	httpRouter.Handler(
+		http.MethodPost,
+		"/loan/:loan_id/disburse",
+		server.Serve(loanHTTPEndpoint.DisburseLoan),
+	)
 }
 
 type LoanHTTPEndpoint struct {
 	createProposedLoanUsecase usecase.CreateProposedLoan
 	approveLoanUsecase        usecase.ApprovedLoan
 	investLoanUsecase         usecase.InvestLoan
+	disburseLoanUsecase       usecase.DisburseLoan
 
 	validator *validator.Validate
 	logger    *zap.SugaredLogger
@@ -53,6 +59,7 @@ func NewLoanHTTPEndpoint(
 	createNewLoanUsecase usecase.CreateProposedLoan,
 	approveLoanUsecase usecase.ApprovedLoan,
 	investLoanUsecase usecase.InvestLoan,
+	disburseLoanUsecase usecase.DisburseLoan,
 
 	logger *zap.SugaredLogger,
 	validator *validator.Validate,
@@ -62,6 +69,7 @@ func NewLoanHTTPEndpoint(
 		createProposedLoanUsecase: createNewLoanUsecase,
 		approveLoanUsecase:        approveLoanUsecase,
 		investLoanUsecase:         investLoanUsecase,
+		disburseLoanUsecase:       disburseLoanUsecase,
 
 		logger:    logger,
 		validator: validator,
@@ -163,6 +171,37 @@ func (l *LoanHTTPEndpoint) InvestLoan(
 		l.logger.Errorw("failed to invest loan", "error", err)
 
 		return nil, err
+	}
+
+	return nil, nil
+}
+
+func (l *LoanHTTPEndpoint) DisburseLoan(
+	ctx context.Context,
+	request pkghttp.Request,
+) (resp any, err error) {
+	var input usecase.DisburseLoanInput
+	if err := request.Decode(&input); err != nil {
+		l.logger.Errorw("failed to decode request", "error", err)
+
+		return nil, pkgerror.ServerErrorFrom(err)
+	}
+
+	if err := l.validator.Struct(input); err != nil {
+		l.logger.Errorw("failed to validate request", "error", err)
+
+		return nil, pkgerror.ValidationErrorFrom(err)
+	}
+
+	params := httprouter.ParamsFromContext(ctx)
+
+	loanID := params.ByName("loan_id")
+
+	input.LoanID, err = strconv.ParseUint(loanID, 10, 64)
+	if err != nil {
+		l.logger.Errorw("failed to parse loan id", "error", err)
+
+		return nil, pkgerror.ValidationErrorFrom(err)
 	}
 
 	return nil, nil

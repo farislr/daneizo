@@ -63,7 +63,7 @@ func (a *ApproveLoan) Execute(
 		return pkgerror.NewBusinessError("loan already approved")
 	}
 
-	if err := a.store.UpdateLoan(ctx, sqlentity.UpdateApproveLoan{
+	if err := a.store.UpdateLoan(ctx, sqlentity.ApproveLoan{
 		ApprovalDate: sql.NullTime{
 			Valid: true,
 			Time:  time.Now(),

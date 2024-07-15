@@ -184,7 +184,7 @@ func (ls *loanSQLGatewaySuite) TestLoanSQLGateway_UpdateLoan() {
 			name: "error RowsAffected",
 			args: args{
 				ctx: context.Background(),
-				in: &sqlentity.UpdateApproveLoan{
+				in: &sqlentity.ApproveLoan{
 					ApprovalDate: sql.NullTime{
 						Valid: true,
 						Time:  time.Now(),
@@ -214,7 +214,7 @@ func (ls *loanSQLGatewaySuite) TestLoanSQLGateway_UpdateLoan() {
 			name: "success",
 			args: args{
 				ctx: context.Background(),
-				in: &sqlentity.UpdateApproveLoan{
+				in: &sqlentity.ApproveLoan{
 					ApprovalDate: sql.NullTime{
 						Valid: true,
 						Time:  time.Now(),
