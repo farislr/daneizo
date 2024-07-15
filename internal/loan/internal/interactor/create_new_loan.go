@@ -43,6 +43,7 @@ func (c *CreateProposedLoan) Execute(
 		ID:              c.snowflakeGen.Generate(),
 		BorrowerID:      in.UserID,
 		PrincipalAmount: in.Amount,
+		InterestRate:    in.InterestRate,
 		InvestedAmount:  decimal.Zero,
 		Status:          sqlentity.Proposed,
 	}); err != nil {

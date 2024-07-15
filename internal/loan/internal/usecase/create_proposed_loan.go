@@ -12,7 +12,8 @@ type (
 	}
 
 	CreateProposedLoanInput struct {
-		UserID uint64          `json:"user_id" validate:"required"` // UserID should get from authorization
-		Amount decimal.Decimal `json:"amount"  validate:"required"`
+		UserID       uint64          `json:"user_id"       validate:"required"` // UserID should get from authorization
+		InterestRate decimal.Decimal `json:"interest_rate" validate:"required"`
+		Amount       decimal.Decimal `json:"amount"        validate:"required"`
 	}
 )
