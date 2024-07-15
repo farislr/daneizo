@@ -1,5 +1,5 @@
 -- +goose Up
-CREATE TABLE customers
+CREATE TABLE IF NOT EXISTS users
 (
     id         BIGINT PRIMARY KEY,
     name       VARCHAR(255) NOT NULL,
@@ -8,13 +8,13 @@ CREATE TABLE customers
     updated_at TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE loans
+CREATE TABLE IF NOT EXISTS loans
 (
     id                   BIGINT PRIMARY KEY,
     borrower_id          BIGINT         NOT NULL,
     principal_amount     DECIMAL(10, 2) NOT NULL,
     invested_amount      DECIMAL(10, 2) NOT NULL,
-    interest_rate        DECIMAL(5, 2)  NOT NULL COMMENT "Per annum",,
+    interest_rate        DECIMAL(5, 2)  NOT NULL COMMENT "Per annum",
     status               VARCHAR(100)   NOT NULL COMMENT "proposed, approved, invested, disbursed",
     approval_date        TIMESTAMP,
     approval_employee_id BIGINT,
@@ -23,7 +23,7 @@ CREATE TABLE loans
     updated_at           TIMESTAMP      NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE loan_investments
+CREATE TABLE IF NOT EXISTS loan_investments
 (
     id          BIGINT PRIMARY KEY,
     loan_id     BIGINT         NOT NULL,
