@@ -3,6 +3,7 @@ package gateway
 import (
 	"context"
 	"database/sql"
+	"fmt"
 
 	"github.com/doug-martin/goqu/v9"
 	_ "github.com/doug-martin/goqu/v9/dialect/mysql"
@@ -54,11 +55,15 @@ func (r *LoanSQLGateway) InsertLoan(ctx context.Context, in sqlentity.Loan) erro
 		return err
 	}
 
-	_, err = res.RowsAffected()
+	row, err := res.RowsAffected()
 	if err != nil {
 		r.logger.Errorw("failed to get last insert id", "error", err)
 
 		return err
+	}
+
+	if row == 0 {
+		return fmt.Errorf("failed to insert loan")
 	}
 
 	return nil
@@ -116,4 +121,52 @@ func (r *LoanSQLGateway) GetLoan(
 	}
 
 	return loans, nil
+}
+
+type UpdateLoanOption func(*goqu.UpdateDataset) *goqu.UpdateDataset
+
+func WithLoanIDFilter(loanID uint64) UpdateLoanOption {
+	return func(query *goqu.UpdateDataset) *goqu.UpdateDataset {
+		return query.Where(goqu.Ex{"id": loanID})
+	}
+}
+
+func (r *LoanSQLGateway) UpdateLoan(
+	ctx context.Context,
+	in sqlentity.UpdateEntity,
+	opts ...UpdateLoanOption,
+) error {
+	query := r.queryBuilder.Update(r.loanTableName).Set(in.MappedValues())
+
+	for _, opt := range opts {
+		query = opt(query)
+	}
+
+	sql, _, err := query.ToSQL()
+	if err != nil {
+		r.logger.Errorw("failed to build query", "error", err)
+
+		return err
+	}
+
+	res, err := r.db.ExecContext(ctx, sql)
+	if err != nil {
+		fmt.Printf("err: %v\n", err)
+		r.logger.Errorw("failed to execute query", "error", err)
+
+		return err
+	}
+
+	row, err := res.RowsAffected()
+	if err != nil {
+		r.logger.Errorw("failed to get last insert id", "error", err)
+
+		return err
+	}
+
+	if row == 0 {
+		return fmt.Errorf("loan not found")
+	}
+
+	return nil
 }

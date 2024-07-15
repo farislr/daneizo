@@ -9,6 +9,7 @@ import (
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/doug-martin/goqu/v9"
+	_ "github.com/doug-martin/goqu/v9/dialect/mysql"
 	"github.com/farislr/daneizo/internal/loan/internal/entity/sqlentity"
 	"github.com/farislr/daneizo/internal/pkg/pkgsql"
 	"github.com/shopspring/decimal"
@@ -146,7 +147,7 @@ func (ls *loanSQLGatewaySuite) TestLoanSQLGateway_InsertLoan() {
 				ls.dbmock.ExpectExec(query).
 					WillReturnResult(sqlmock.NewResult(1, 1))
 			},
-			wantErr: true,
+			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
@@ -160,6 +161,99 @@ func (ls *loanSQLGatewaySuite) TestLoanSQLGateway_InsertLoan() {
 			)
 			if err := r.InsertLoan(tt.args.ctx, tt.args.in); (err != nil) != tt.wantErr {
 				ls.T().Errorf("LoanSQLGateway.InsertLoan() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			ls.NoError(ls.dbmock.ExpectationsWereMet())
+		})
+	}
+}
+
+func (ls *loanSQLGatewaySuite) TestLoanSQLGateway_UpdateLoan() {
+
+	type args struct {
+		ctx  context.Context
+		in   sqlentity.Entity
+		opts []UpdateLoanOption
+	}
+	tests := []struct {
+		name    string
+		args    args
+		mockFn  func(a args)
+		wantErr bool
+	}{
+		{
+			name: "error RowsAffected",
+			args: args{
+				ctx: context.Background(),
+				in: &sqlentity.ApproveLoan{
+					ApprovalDate: sql.NullTime{
+						Valid: true,
+						Time:  time.Now(),
+					},
+					ApprovalEmployeeID: sql.NullInt64{
+						Valid: true,
+						Int64: 1,
+					},
+				},
+				opts: []UpdateLoanOption{
+					WithLoanIDFilter(1),
+				},
+			},
+			mockFn: func(a args) {
+				query, _, err := ls.queryBuilder.Update(ls.loanTableName).
+					Set(a.in.MappedValues()).
+					Where(goqu.Ex{"id": 1}).
+					ToSQL()
+				ls.NoError(err)
+
+				ls.dbmock.ExpectExec(query).
+					WillReturnResult(sqlmock.NewErrorResult(errors.New("error")))
+			},
+			wantErr: true,
+		},
+		{
+			name: "success",
+			args: args{
+				ctx: context.Background(),
+				in: &sqlentity.ApproveLoan{
+					ApprovalDate: sql.NullTime{
+						Valid: true,
+						Time:  time.Now(),
+					},
+					ApprovalEmployeeID: sql.NullInt64{
+						Valid: true,
+						Int64: 1,
+					},
+				},
+				opts: []UpdateLoanOption{
+					WithLoanIDFilter(1),
+				},
+			},
+			mockFn: func(a args) {
+				query, _, err := ls.queryBuilder.Update(ls.loanTableName).
+					Set(a.in.MappedValues()).
+					Where(goqu.Ex{"id": 1}).
+					ToSQL()
+				ls.NoError(err)
+
+				ls.dbmock.ExpectExec(query).
+					WillReturnResult(sqlmock.NewResult(1, 1))
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		ls.Run(tt.name, func() {
+			tt.mockFn(tt.args)
+
+			r := NewLoanSQLGateway(
+				ls.db,
+				zap.NewNop().Sugar(),
+				ls.queryBuilder,
+			)
+			if err := r.UpdateLoan(tt.args.ctx, tt.args.in, tt.args.opts...); (err != nil) != tt.wantErr {
+				ls.T().Logf("LoanSQLGateway.UpdateLoan() error = %v, wantErr %v", err, tt.wantErr)
+
+				ls.T().Errorf("LoanSQLGateway.UpdateLoan() error = %v, wantErr %v", err, tt.wantErr)
 			}
 			ls.NoError(ls.dbmock.ExpectationsWereMet())
 		})
