@@ -111,7 +111,14 @@ func (i *InvestLoan) Execute(ctx context.Context, in usecase.InvestLoanInput) er
 
 			return err
 		}
+
+		i.sendAgreementLetterToInvestor()
 	}
 
 	return nil
+}
+
+func (i *InvestLoan) sendAgreementLetterToInvestor() {
+	// send email to investor
+	i.logger.Info("send email to investor")
 }
