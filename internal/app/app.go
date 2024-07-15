@@ -60,8 +60,8 @@ func (app *App) spinUp() *App {
 	app.initLogger()
 	app.initDB()
 	app.setUpGoqu()
-	app.makeHTTPServer()
 	app.initRouter()
+	app.makeHTTPServer()
 	app.initSnowflakeGen()
 	app.setUpClosers()
 
