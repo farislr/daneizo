@@ -109,6 +109,14 @@ func CodeMessageErrorEncoder(_ context.Context, err error, w http.ResponseWriter
 		}
 	}
 
+	if pkgerror.IsServerError(err) {
+		statusCode = http.StatusInternalServerError
+		response = CodeMessageResponse{
+			CodeMessage: RequestGenericError,
+			Data:        err.Error(),
+		}
+	}
+
 	w.WriteHeader(statusCode)
 
 	_ = json.NewEncoder(w).Encode(response) //nolint:errcheck,errchkjson // won't be an error
