@@ -29,6 +29,6 @@ CREATE TABLE IF NOT EXISTS loan_investments (
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 -- +goose Down
-DROP TABLE IF EXISTS customers;
+DROP TABLE IF EXISTS users;
 DROP TABLE IF EXISTS loans;
 DROP TABLE IF EXISTS loan_investments;
