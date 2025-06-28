@@ -11,9 +11,9 @@ const (
 	ContextKeyAuthorization contextKey = iota
 )
 
-func WithPopulateContextFromHeader(
+func WithPopulateContextFromHeader[T any](
 	ctx context.Context,
-	r RequestReadWriter,
+	r *Request[T],
 ) (context.Context, error) {
 	for k, v := range map[contextKey]string{
 		ContextKeyAuthorization: r.Header().Get("Authorization"),

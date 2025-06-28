@@ -21,12 +21,12 @@ func Test_Server_Serve(t *testing.T) {
 	type fields struct {
 		responseEncoder       ResponseEncoder
 		errorResponseEncoder  ErrorResponseEncoder
-		requestDecoders       []RequestDecoder
-		preRequestMiddlewares []PreRequestMiddleware
+		requestDecoders       []RequestDecoderOptionParam
+		preRequestMiddlewares []PreRequestMiddlewareParam
 	}
 	type args struct {
 		body any
-		e    EndpointHandler
+		e    EndpointHandlerInputParam
 	}
 	tests := []struct {
 		name   string
@@ -43,9 +43,9 @@ func Test_Server_Serve(t *testing.T) {
 				},
 			},
 			args: args{
-				e: func(ctx context.Context, r Request) (any, error) {
+				e: EndpointHandler[exampleBody](func(ctx context.Context, r *Request[exampleBody]) (any, error) {
 					return nil, nil
-				},
+				}),
 			},
 		},
 		{
@@ -56,12 +56,14 @@ func Test_Server_Serve(t *testing.T) {
 				},
 				errorResponseEncoder: func(ctx context.Context, err error, w http.ResponseWriter) {
 				},
-				requestDecoders: []RequestDecoder{WithPopulateContextFromHeader},
+				requestDecoders: []RequestDecoderOptionParam{
+					RequestDecoder[exampleBody](DefaultRequestDecoder[exampleBody]),
+				},
 			},
 			args: args{
-				e: func(ctx context.Context, r Request) (any, error) {
+				e: EndpointHandler[exampleBody](func(ctx context.Context, r *Request[exampleBody]) (any, error) {
 					return nil, nil
-				},
+				}),
 			},
 		},
 		{
@@ -72,32 +74,27 @@ func Test_Server_Serve(t *testing.T) {
 				},
 				errorResponseEncoder: func(ctx context.Context, err error, w http.ResponseWriter) {
 				},
-				requestDecoders: []RequestDecoder{},
-				preRequestMiddlewares: []PreRequestMiddleware{
-					func(next EndpointHandler) EndpointHandler {
-						return next
-					},
+				requestDecoders: []RequestDecoderOptionParam{
+					RequestDecoder[exampleBody](DefaultRequestDecoder[exampleBody]),
+				},
+				preRequestMiddlewares: []PreRequestMiddlewareParam{
+					PreRequestMiddleware[exampleBody](func(next EndpointHandler[exampleBody]) EndpointHandler[exampleBody] {
+						return func(ctx context.Context, r *Request[exampleBody]) (any, error) {
+							fmt.Println("PreRequestMiddleware executed")
+							return next(ctx, r)
+						}
+					}),
 				},
 			},
 			args: args{
 				body: exampleBody{
 					Example: "example",
 				},
-				e: func(ctx context.Context, r Request) (any, error) {
-					type snapRequest struct {
-						PartnerID string `json:"partner_id"`
-					}
+				e: EndpointHandler[exampleBody](func(ctx context.Context, req *Request[exampleBody]) (any, error) {
 
-					var req snapRequest
-
-					if err := r.Decode(&req); err != nil {
-						return nil, err
-
-					}
-
-					fmt.Printf("req: %v\n", req)
+					fmt.Printf("req: %+v\n", req.body)
 					return nil, errors.New("test endpoint error")
-				},
+				}),
 			},
 		},
 		{
@@ -110,28 +107,23 @@ func Test_Server_Serve(t *testing.T) {
 				},
 			},
 			args: args{
-				e: func(ctx context.Context, r Request) (any, error) {
+				e: EndpointHandler[exampleBody](func(ctx context.Context, r *Request[exampleBody]) (any, error) {
 					return nil, nil
-				},
+				}),
 			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			s := NewServer(
-				WithResponseEncoder(tt.fields.responseEncoder),
-				WithErrorResponseEncoder(tt.fields.errorResponseEncoder),
-				WithPreRequestMiddlewares(tt.fields.preRequestMiddlewares...),
-			)
 
 			opts := []EndpointOption{}
 
 			for _, dec := range tt.fields.requestDecoders {
-				opts = append(opts, WithRequestDecoder(dec))
+				opts = append(opts, WithRequestDecoder(dec.(RequestDecoder[exampleBody])))
 			}
 
-			e := s.Serve(tt.args.e, opts...)
+			e := NewHandler(tt.args.e.(EndpointHandler[exampleBody]), opts...)
 
 			var req *http.Request
 			var err error

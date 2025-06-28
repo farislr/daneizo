@@ -2,12 +2,25 @@ package pkghttp
 
 import (
 	"context"
-	"net/http"
 )
 
 // RequestDecoder function defines the contract for decoding request.
-type RequestDecoder func(ctx context.Context, r RequestReadWriter) (context.Context, error)
+type (
+	RequestDecoder[T any] func(ctx context.Context, r *Request[T]) (context.Context, error)
 
-func DefaultRequestDecoder(ctx context.Context, _ *http.Request) (context.Context, error) {
+	RequestDecoderOptionParam interface {
+		Exec(ctx context.Context, r RequestInputParam) (context.Context, error)
+	}
+)
+
+func (rd RequestDecoder[T]) Exec(ctx context.Context, r RequestInputParam) (context.Context, error) {
+	if req, ok := r.(*Request[T]); ok {
+		return rd(ctx, req)
+	}
+
+	return ctx, nil
+}
+
+func DefaultRequestDecoder[T any](ctx context.Context, _ *Request[T]) (context.Context, error) {
 	return ctx, nil
 }

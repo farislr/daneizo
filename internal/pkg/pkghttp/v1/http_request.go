@@ -8,12 +8,7 @@ import (
 )
 
 type (
-	Request interface {
-		Decode(v any) error
-		Header() http.Header
-		URL() *url.URL
-		Raw() *http.Request
-	}
+	RequestInputParam interface{}
 
 	RequestReadWriter interface {
 		Decode(v any) error
@@ -22,62 +17,40 @@ type (
 		URL() *url.URL
 	}
 
-	request struct {
+	Request[T any] struct {
 		httpReq *http.Request
+		body    T
 	}
 )
 
-func NewRequest(r *http.Request) *request { //nolint:revive // this is a factory function
-	return &request{
+func NewRequest[T any](r *http.Request) (*Request[T], error) {
+	ri := &Request[T]{
 		httpReq: r,
 	}
 
-}
-
-func (r *request) Body() *reader {
-	var err error
-	var body *reader
-	if r.httpReq.Body != nil {
-		body, err = newReadWriter(r.httpReq.Body)
-		if err != nil {
-			return nil
+	if ri.httpReq.Body != nil && ri.httpReq.ContentLength > 0 {
+		if err := json.NewDecoder(ri.httpReq.Body).Decode(&ri.body); err != nil {
+			if err != io.EOF {
+				return nil, err
+			}
 		}
-
-		r.httpReq.Body = body
 	}
 
-	return body
+	return ri, nil
 }
 
-func (r *request) Decode(v any) error {
-	if body := r.Body(); body != nil {
-		b, err := io.ReadAll(r.Body())
-		if err != nil {
-			return err
-		}
-
-		return json.Unmarshal(b, v)
-	}
-
-	return nil
+func (r *Request[T]) Body() T {
+	return r.body
 }
 
-func (r *request) Encode(v any) error {
-	if body := r.Body(); body != nil {
-		return json.NewEncoder(body).Encode(v)
-	}
-
-	return nil
-}
-
-func (r *request) Header() http.Header {
+func (r *Request[T]) Header() http.Header {
 	return r.httpReq.Header
 }
 
-func (r *request) URL() *url.URL {
+func (r *Request[T]) URL() *url.URL {
 	return r.httpReq.URL
 }
 
-func (r *request) Raw() *http.Request {
+func (r *Request[T]) Raw() *http.Request {
 	return r.httpReq
 }

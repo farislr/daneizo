@@ -22,35 +22,35 @@ func NewLoanHTTPGateway(
 	loanHTTPEndpoint *LoanHTTPEndpoint,
 	validator *validator.Validate,
 ) {
-	server := pkghttp.NewServer(
-		pkghttp.WithResponseEncoder(pkghttp.CodeMessageResponseEncoder),
-		pkghttp.WithErrorResponseEncoder(pkghttp.CodeMessageErrorEncoder),
-	)
+	opts := []pkghttp.EndpointOption{
+		pkghttp.WithEndpointResponseEncoder(pkghttp.CodeMessageResponseEncoder),
+		pkghttp.WithEndpointErrorResponseEncoder(pkghttp.CodeMessageErrorEncoder),
+	}
 
 	httpRouter.Handler(
 		http.MethodPost,
 		"/loan/:loan_id/approve",
-		server.Serve(loanHTTPEndpoint.ApproveLoan),
+		pkghttp.NewHandler(loanHTTPEndpoint.ApproveLoan, opts...),
 	)
 
-	httpRouter.Handler(http.MethodPost, "/loan", server.Serve(loanHTTPEndpoint.CreateNewLoan))
+	httpRouter.Handler(http.MethodPost, "/loan", pkghttp.NewHandler(loanHTTPEndpoint.CreateNewLoan, opts...))
 
 	httpRouter.Handler(
 		http.MethodPost,
 		"/loan/:loan_id/invest",
-		server.Serve(loanHTTPEndpoint.InvestLoan),
+		pkghttp.NewHandler(loanHTTPEndpoint.InvestLoan, opts...),
 	)
 
 	httpRouter.Handler(
 		http.MethodPost,
 		"/loan/:loan_id/disburse",
-		server.Serve(loanHTTPEndpoint.DisburseLoan),
+		pkghttp.NewHandler(loanHTTPEndpoint.DisburseLoan, opts...),
 	)
 
 	httpRouter.Handler(
 		http.MethodPost,
 		"/loan/:loan_id/upload-agreement-letter",
-		server.Serve(loanHTTPEndpoint.UploadAgreementLetter),
+		pkghttp.NewHandler(loanHTTPEndpoint.UploadAgreementLetter, opts...),
 	)
 }
 
@@ -87,14 +87,9 @@ func NewLoanHTTPEndpoint(
 
 func (l *LoanHTTPEndpoint) CreateNewLoan(
 	ctx context.Context,
-	request pkghttp.Request,
+	request *pkghttp.Request[usecase.CreateProposedLoanInput],
 ) (any, error) {
-	var input usecase.CreateProposedLoanInput
-	if err := request.Decode(&input); err != nil {
-		l.logger.Errorw("failed to decode request", "error", err)
-
-		return nil, pkgerror.ServerErrorFrom(err)
-	}
+	input := request.Body()
 
 	if err := l.validator.Struct(input); err != nil {
 		l.logger.Errorw("failed to validate request", "error", err)
@@ -113,15 +108,9 @@ func (l *LoanHTTPEndpoint) CreateNewLoan(
 
 func (l *LoanHTTPEndpoint) ApproveLoan(
 	ctx context.Context,
-	request pkghttp.Request,
+	request *pkghttp.Request[usecase.ApprovedLoanInput],
 ) (resp any, err error) {
-	var input usecase.ApprovedLoanInput
-	if err := request.Decode(&input); err != nil {
-		l.logger.Errorw("failed to decode request", "error", err)
-
-		return nil, pkgerror.ServerErrorFrom(err)
-	}
-
+	input := request.Body()
 	params := httprouter.ParamsFromContext(ctx)
 
 	loanID := params.ByName("loan_id")
@@ -150,14 +139,9 @@ func (l *LoanHTTPEndpoint) ApproveLoan(
 
 func (l *LoanHTTPEndpoint) InvestLoan(
 	ctx context.Context,
-	request pkghttp.Request,
+	request *pkghttp.Request[usecase.InvestLoanInput],
 ) (resp any, err error) {
-	var input usecase.InvestLoanInput
-	if err := request.Decode(&input); err != nil {
-		l.logger.Errorw("failed to decode request", "error", err)
-
-		return nil, pkgerror.ServerErrorFrom(err)
-	}
+	input := request.Body()
 
 	if err := l.validator.Struct(input); err != nil {
 		l.logger.Errorw("failed to validate request", "error", err)
@@ -187,14 +171,9 @@ func (l *LoanHTTPEndpoint) InvestLoan(
 
 func (l *LoanHTTPEndpoint) DisburseLoan(
 	ctx context.Context,
-	request pkghttp.Request,
+	request *pkghttp.Request[usecase.DisburseLoanInput],
 ) (resp any, err error) {
-	var input usecase.DisburseLoanInput
-	if err := request.Decode(&input); err != nil {
-		l.logger.Errorw("failed to decode request", "error", err)
-
-		return nil, pkgerror.ServerErrorFrom(err)
-	}
+	input := request.Body()
 
 	if err := l.validator.Struct(input); err != nil {
 		l.logger.Errorw("failed to validate request", "error", err)
@@ -224,7 +203,7 @@ func (l *LoanHTTPEndpoint) DisburseLoan(
 
 func (l *LoanHTTPEndpoint) UploadAgreementLetter(
 	ctx context.Context,
-	request pkghttp.Request,
+	request *pkghttp.Request[struct{}],
 ) (resp any, err error) {
 	rawRequest := request.Raw()
 	params := httprouter.ParamsFromContext(ctx)
