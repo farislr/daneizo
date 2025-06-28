@@ -6,34 +6,43 @@ import (
 )
 
 type (
-	EndpointHandler func(ctx context.Context, r Request) (response interface{}, err error)
+	EndpointHandler[T any] func(ctx context.Context, r *Request[T]) (response interface{}, err error)
 
-	PreRequestMiddleware func(next EndpointHandler) EndpointHandler
-
-	Endpoint struct {
-		handler              EndpointHandler
-		responseEncoder      ResponseEncoder
-		requestDecoders      []RequestDecoder
-		errorResponseEncoder ErrorResponseEncoder
-		middlewares          []PreRequestMiddleware
+	EndpointHandlerInputParam interface {
+		Exec(ctx context.Context, r RequestInputParam) (response interface{}, err error)
 	}
 
-	EndpointOption func(*Endpoint)
+	Endpoint[T any] struct {
+		handler EndpointHandler[T]
+
+		endpointOptionParam EndpointOptionParam
+	}
 )
 
-func (e *Endpoint) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-
-	req := &request{
-		httpReq: r,
+func (e EndpointHandler[T]) Exec(ctx context.Context, r RequestInputParam) (response interface{}, err error) {
+	if req, ok := r.(*Request[T]); ok {
+		return e(ctx, req)
 	}
 
-	if e.requestDecoders != nil {
-		for _, rd := range e.requestDecoders {
+	return nil, nil
+}
+
+func (e *Endpoint[T]) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	req, err := NewRequest[T](r)
+	if err != nil {
+		e.endpointOptionParam.errorResponseEncoder(ctx, err, w)
+
+		return
+	}
+
+	if e.endpointOptionParam.requestDecoderParams != nil {
+		for _, rd := range e.endpointOptionParam.requestDecoderParams {
 			var err error
-			ctx, err = rd(ctx, req)
+			ctx, err = rd.Exec(ctx, req)
 			if err != nil {
-				e.errorResponseEncoder(ctx, err, w)
+				e.endpointOptionParam.errorResponseEncoder(ctx, err, w)
 
 				return
 			}
@@ -41,44 +50,24 @@ func (e *Endpoint) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	handler := e.handler
-	for _, m := range e.middlewares {
-		handler = m(handler)
+	for _, m := range e.endpointOptionParam.middlewares {
+		handler = m.Exec(handler).(EndpointHandler[T])
 	}
 
 	res, err := handler(ctx, req)
 	if err != nil {
-		e.errorResponseEncoder(ctx, err, w)
+		e.endpointOptionParam.errorResponseEncoder(ctx, err, w)
 
 		return
 	}
 
-	if err := e.responseEncoder(ctx, w, res); err != nil {
-		e.errorResponseEncoder(ctx, err, w)
+	if err := e.endpointOptionParam.responseEncoder(ctx, w, res); err != nil {
+		e.endpointOptionParam.errorResponseEncoder(ctx, err, w)
 
 		return
 	}
 }
 
-func WithRequestDecoder(decoder RequestDecoder) EndpointOption {
-	return func(endpoint *Endpoint) {
-		endpoint.requestDecoders = append(endpoint.requestDecoders, decoder)
-	}
-}
-
-func WithEndpointResponseEncoder(encoder ResponseEncoder) EndpointOption {
-	return func(endpoint *Endpoint) {
-		endpoint.responseEncoder = encoder
-	}
-}
-
-func WithEndpointErrorResponseEncoder(encoder ErrorResponseEncoder) EndpointOption {
-	return func(endpoint *Endpoint) {
-		endpoint.errorResponseEncoder = encoder
-	}
-}
-
-func WithPreRequestMiddleware(middlewares ...PreRequestMiddleware) EndpointOption {
-	return func(endpoint *Endpoint) {
-		endpoint.middlewares = append(endpoint.middlewares, middlewares...)
-	}
+func (e *Endpoint[T]) getOptions() EndpointOptionParam {
+	return e.endpointOptionParam
 }

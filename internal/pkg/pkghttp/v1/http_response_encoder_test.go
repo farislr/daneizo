@@ -11,7 +11,9 @@ import (
 )
 
 type responseEncoderTestArgs struct {
-	endpoint *Endpoint
+	endpoint interface {
+		http.Handler
+	}
 }
 
 type responseEncoderTest struct {
@@ -27,13 +29,11 @@ func Test_DefaultResponseEncoder(t *testing.T) {
 		{
 			name: "success without body",
 			args: responseEncoderTestArgs{
-				endpoint: &Endpoint{
-					handler: func(ctx context.Context, r Request) (any, error) {
-						return nil, nil
-					},
-					responseEncoder:      DefaultResponseEncoder,
-					errorResponseEncoder: DefaultErrorEncoder,
-				},
+				endpoint: NewHandler(func(ctx context.Context, r *Request[struct {
+					ID string
+				}]) (response interface{}, err error) {
+					return nil, nil
+				}),
 			},
 			expectedCode: http.StatusOK,
 			expectedBody: "null\n",
@@ -44,13 +44,11 @@ func Test_DefaultResponseEncoder(t *testing.T) {
 		{
 			name: "success with body",
 			args: responseEncoderTestArgs{
-				endpoint: &Endpoint{
-					handler: func(ctx context.Context, r Request) (any, error) {
-						return "body", nil
-					},
-					responseEncoder:      DefaultResponseEncoder,
-					errorResponseEncoder: DefaultErrorEncoder,
-				},
+				endpoint: NewHandler(func(ctx context.Context, r *Request[struct {
+					ID string
+				}]) (response interface{}, err error) {
+					return "body", nil
+				}),
 			},
 			expectedCode: http.StatusOK,
 			expectedBody: "\"body\"\n",
@@ -61,13 +59,11 @@ func Test_DefaultResponseEncoder(t *testing.T) {
 		{
 			name: "success with custom code & additional headers",
 			args: responseEncoderTestArgs{
-				endpoint: &Endpoint{
-					handler: func(ctx context.Context, r Request) (any, error) {
-						return customCodeAndHeaderDummy{}, nil
-					},
-					responseEncoder:      DefaultResponseEncoder,
-					errorResponseEncoder: DefaultErrorEncoder,
-				},
+				endpoint: NewHandler(func(ctx context.Context, r *Request[struct {
+					ID string
+				}]) (response interface{}, err error) {
+					return customCodeAndHeaderDummy{}, nil
+				}),
 			},
 			expectedCode: http.StatusAccepted,
 			expectedBody: "{}\n",
@@ -79,13 +75,11 @@ func Test_DefaultResponseEncoder(t *testing.T) {
 		{
 			name: "success with no content",
 			args: responseEncoderTestArgs{
-				endpoint: &Endpoint{
-					handler: func(ctx context.Context, r Request) (any, error) {
-						return noResponseDummy{}, nil
-					},
-					responseEncoder:      DefaultResponseEncoder,
-					errorResponseEncoder: DefaultErrorEncoder,
-				},
+				endpoint: NewHandler(func(ctx context.Context, r *Request[struct {
+					ID string
+				}]) (response interface{}, err error) {
+					return noResponseDummy{}, nil
+				}),
 			},
 			expectedCode: http.StatusNoContent,
 			expectedBody: "",
@@ -107,13 +101,11 @@ func Test_ErrorResponseEncoder(t *testing.T) {
 		{
 			name: "error response",
 			args: responseEncoderTestArgs{
-				endpoint: &Endpoint{
-					handler: func(ctx context.Context, r Request) (any, error) {
-						return nil, errors.New("some error")
-					},
-					responseEncoder:      DefaultResponseEncoder,
-					errorResponseEncoder: DefaultErrorEncoder,
-				},
+				endpoint: NewHandler(func(ctx context.Context, r *Request[struct {
+					ID string
+				}]) (response interface{}, err error) {
+					return nil, errors.New("some error")
+				}),
 			},
 			expectedCode: http.StatusInternalServerError,
 			expectedBody: "\"some error\"\n",
